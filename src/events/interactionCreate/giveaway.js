@@ -59,6 +59,7 @@ module.exports = async (client, interaction) => {
 
         await interaction.showModal(modal);
       } else {
+        await interaction.deferReply({ ephemeral: true });
         let userInviteCount = await UserInviteCount.findOne({
           guildId: interaction.guildId,
           userId: interaction.user.id,
@@ -83,21 +84,21 @@ module.exports = async (client, interaction) => {
 
         const imageEmbeds = interaction.message.embeds[0].data.image.url;
         await giveaway.save();
-        const updatedEmbed = EmbedBuilder.from(interaction.message.embeds)
-          .setDescription(
-            `${
-              giveaway.label
-            }\n\nClick the button below to enter!\nEnds: <t:${Math.floor(
-              giveaway.endTime.getTime() / 1000
-            )}:R>\n\nTotal Tickets: ${giveaway.totalTickets}`
-          )
-          .setImage(imageEmbeds);
+        // const updatedEmbed = EmbedBuilder.from(interaction.message.embeds)
+        //   .setDescription(
+        //     `${
+        //       giveaway.label
+        //     }\n\nClick the button below to enter!\nEnds: <t:${Math.floor(
+        //       giveaway.endTime.getTime() / 1000
+        //     )}:R>\n\nTotal Tickets: ${giveaway.totalTickets}`
+        //   )
+        //   .setImage(imageEmbeds);
 
-        await interaction.message.edit({
-          embeds: [updatedEmbed],
-        });
+        // await interaction.message.edit({
+        //   embeds: [updatedEmbed],
+        // });
 
-        await interaction.reply({
+        await interaction.editReply({
           content: `You have successfully entered the giveaway with 1 ticket!`,
           ephemeral: true,
         });
@@ -113,6 +114,30 @@ module.exports = async (client, interaction) => {
         });
       }
       await showTopEntries(interaction, updatedGiveaway);
+    } else if (interaction.customId.startsWith(`giveaway_total_tickets`)) {
+      await interaction.deferReply({ ephemeral: true });
+      const giveawayId = interaction.customId.split("_")[3];
+      const updatedGiveaway = await giveawaySchema.findById(giveawayId);
+      if (!updatedGiveaway) {
+        return interaction.editReply({
+          content: "This giveaway no longer exists.",
+          ephemeral: true,
+        });
+      }
+
+      const totalTicketsEmbed = new EmbedBuilder()
+        .setColor("#0099ff")
+        .setTitle(`🎉 **Giveaway Summary** 🎉`)
+        .addFields({
+          name: "🎫 Total Tickets:",
+          value: `\`${updatedGiveaway.totalTickets}\``,
+          inline: true,
+        });
+
+      await interaction.editReply({
+        embeds: [totalTicketsEmbed],
+        ephemeral: true,
+      });
     }
   } catch (e) {
     console.log(e);

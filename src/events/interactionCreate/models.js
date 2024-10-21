@@ -53,14 +53,14 @@ module.exports = async (client, interaction) => {
     const channel = await client.channels.fetch(giveaway.channelId);
     const message = await channel.messages.fetch(giveaway.messageId);
 
-    const updatedEmbed = EmbedBuilder.from(message.embeds[0]).setDescription(
-      message.embeds[0].description.replace(
-        /Total Tickets: \d+/,
-        `Total Tickets: ${giveaway.totalTickets}`
-      )
-    );
+    // const updatedEmbed = EmbedBuilder.from(message.embeds[0]).setDescription(
+    //   message.embeds[0].description.replace(
+    //     /Total Tickets: \d+/,
+    //     `Total Tickets: ${giveaway.totalTickets}`
+    //   )
+    // );
 
-    await message.edit({ embeds: [updatedEmbed] });
+    // await message.edit({ embeds: [updatedEmbed] });
 
     await interaction.editReply({
       content: `You have entered the giveaway with ${ticketCount} additional ticket(s). Your total entries for this giveaway: ${

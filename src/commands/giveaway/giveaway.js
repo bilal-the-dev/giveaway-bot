@@ -78,7 +78,7 @@ module.exports = {
         .setDescription(
           `${label}\n\nClick the button below to enter!\nEnds: <t:${Math.floor(
             endTime.getTime() / 1000
-          )}:R>\n\nTotal Tickets: 0`
+          )}:R>`
         )
         .setColor("#FF00FF")
         .setImage(image.url);
@@ -95,9 +95,16 @@ module.exports = {
         .setStyle(ButtonStyle.Secondary)
         .setEmoji("🏆");
 
+      const totalTicketsButton = new ButtonBuilder()
+        .setCustomId(`giveaway_total_tickets_${giveaway._id}`)
+        .setLabel("Total Tickets")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji("📍");
+
       const row = new ActionRowBuilder().addComponents(
         button,
-        topEntriesButton
+        topEntriesButton,
+        totalTicketsButton
       );
 
       const message = await channel.send({
