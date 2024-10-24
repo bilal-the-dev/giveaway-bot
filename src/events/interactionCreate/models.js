@@ -34,6 +34,7 @@ module.exports = async (client, interaction) => {
       );
     }
     userInviteCount.tickets -= ticketCount;
+    userInviteCount.weeklyInvites -= ticketCount;
     giveaway.totalTickets += ticketCount;
 
     let participant = giveaway.participants.find(

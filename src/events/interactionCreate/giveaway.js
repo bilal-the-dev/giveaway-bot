@@ -7,6 +7,12 @@ const {
 } = require("discord.js");
 const giveawaySchema = require("../../models/giveawaySchema");
 const UserInviteCount = require("../../models/memberSchema");
+const CoinflipRequest = require("../../models/CoinflipSchema");
+
+const IMAGE = {
+  heads: "./gifs/heads.gif",
+  tails: "./gifs/tails.gif",
+};
 module.exports = async (client, interaction) => {
   try {
     if (!interaction.isButton()) return;
@@ -70,6 +76,7 @@ module.exports = async (client, interaction) => {
             guildId: interaction.guildId,
             userId: interaction.user.id,
             tickets: 0,
+            weeklyInvites: 0,
           });
           await userInviteCount.save();
         }
@@ -84,20 +91,6 @@ module.exports = async (client, interaction) => {
 
         const imageEmbeds = interaction.message.embeds[0].data.image.url;
         await giveaway.save();
-        // const updatedEmbed = EmbedBuilder.from(interaction.message.embeds)
-        //   .setDescription(
-        //     `${
-        //       giveaway.label
-        //     }\n\nClick the button below to enter!\nEnds: <t:${Math.floor(
-        //       giveaway.endTime.getTime() / 1000
-        //     )}:R>\n\nTotal Tickets: ${giveaway.totalTickets}`
-        //   )
-        //   .setImage(imageEmbeds);
-
-        // await interaction.message.edit({
-        //   embeds: [updatedEmbed],
-        // });
-
         await interaction.editReply({
           content: `You have successfully entered the giveaway with 1 ticket!`,
           ephemeral: true,
@@ -138,6 +131,98 @@ module.exports = async (client, interaction) => {
         embeds: [totalTicketsEmbed],
         ephemeral: true,
       });
+    } else if (interaction.customId.startsWith(`coinflip_`)) {
+      const [action, requestId] = interaction.customId.split("_").slice(1);
+      const request = await CoinflipRequest.findById(requestId);
+
+      if (!request || request.status !== "pending") {
+        return interaction.reply({
+          content: "This challenge has expired or is no longer valid.",
+          ephemeral: true,
+        });
+      }
+
+      if (interaction.user.id !== request.challengedId) {
+        return interaction.reply({
+          content: "This challenge is not for you!",
+          ephemeral: true,
+        });
+      }
+
+      if (action === "decline") {
+        request.status = "declined";
+        await request.save();
+
+        return interaction.update({
+          content: "Challenge declined!",
+          embeds: [],
+          components: [],
+        });
+      }
+
+      if (action === "accept") {
+        // Randomly assign sides to players first
+        const sides = ["heads", "tails"];
+        // Randomly shuffle the sides array
+        const shuffledSides = sides.sort(() => Math.random() - 0.5);
+
+        // Assign sides randomly to players
+        const playerSides = {
+          [request.challengerId]: shuffledSides[0],
+          [request.challengedId]: shuffledSides[1],
+        };
+
+        // Perform the coinflip
+        const result = Math.random() < 0.5 ? "heads" : "tails";
+
+        // Determine winner based on the result and assigned sides
+        const winner = Object.entries(playerSides).find(
+          ([playerId, side]) => side === result
+        )[0];
+        const loser =
+          winner === request.challengerId
+            ? request.challengedId
+            : request.challengerId;
+
+        // Update request status
+        request.status = "completed";
+        request.result = result;
+        request.winnerId = winner;
+        await request.save();
+
+        // Update tickets in database
+        await UserInviteCount.findOneAndUpdate(
+          { guildId: interaction.guildId, userId: winner },
+          { $inc: { tickets: request.tickets } }
+        );
+
+        await UserInviteCount.findOneAndUpdate(
+          { guildId: interaction.guildId, userId: loser },
+          { $inc: { tickets: -request.tickets } }
+        );
+
+        // Create result embed with more detailed information
+        // Define the result message
+        const resultMessage =
+          `🎲 **Coinflip Result!**\n\n` +
+          `**Side Assignment:**\n` +
+          `<@${request.challengerId}>: ${playerSides[
+            request.challengerId
+          ].toUpperCase()}\n` +
+          `<@${request.challengedId}>: ${playerSides[
+            request.challengedId
+          ].toUpperCase()}\n\n` +
+          `The coin landed on **${result.toUpperCase()}**!\n\n` +
+          `<@${winner}> wins ${request.tickets} tickets! 🎉`;
+
+        // Return the message and image
+        return interaction.update({
+          content: resultMessage,
+          files: [IMAGE[result]], // Assuming IMAGE[result] contains the image URL/path
+          embeds: [],
+          components: [],
+        });
+      }
     }
   } catch (e) {
     console.log(e);

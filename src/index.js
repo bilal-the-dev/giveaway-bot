@@ -57,7 +57,7 @@ client.on("guildMemberAdd", async (member) => {
 
       const updatedInviteCount = await UserInviteCount.findOneAndUpdate(
         { guildId: member.guild.id, userId: invite.inviter.id },
-        { $inc: { tickets: randomTickets } },
+        { $inc: { tickets: randomTickets, weeklyInvites: randomTickets } },
         { upsert: true, new: true }
       );
 
@@ -73,5 +73,48 @@ client.on("guildMemberAdd", async (member) => {
     `${member.user.tag} joined but I couldn't find which invite they used.`
   );
 });
+const messageCooldowns = new Map();
+client.on("messageCreate", handleMessage);
 
+async function handleMessage(message) {
+  try {
+    if (message.author.bot) return;
+
+    const cooldownTime = 5000; // 5 seconds cooldown
+    const now = Date.now();
+
+    if (messageCooldowns.has(message.author.id)) {
+      const lastMessageTime = messageCooldowns.get(message.author.id);
+
+      if (now - lastMessageTime < cooldownTime) {
+        // User is still on cooldown, ignore the message
+        return;
+      }
+    }
+
+    // Update the cooldown timestamp for the user
+    messageCooldowns.set(message.author.id, now);
+
+    await UserInviteCount.findOneAndUpdate(
+      {
+        guildId: message.guild.id,
+        userId: message.author.id,
+      },
+      {
+        $inc: { weeklyMessages: 1 },
+        $setOnInsert: {
+          tickets: 0,
+          weeklyInvites: 0,
+          lastResetTimestamp: new Date(),
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+  } catch (error) {
+    console.error("Error tracking message:", error);
+  }
+}
 client.login(process.env.TOKEN);

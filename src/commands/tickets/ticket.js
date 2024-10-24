@@ -47,6 +47,7 @@ module.exports = {
       ],
     },
   ],
+
   callback: async (client, interaction) => {
     if (
       !interaction.member.permissions.has(
@@ -55,51 +56,81 @@ module.exports = {
     ) {
       await interaction.reply({
         content: "You do not have permission to use this command.",
-        ephemeral: true, // Makes the reply visible only to the command user
+        ephemeral: true,
       });
       return;
     }
+
     const subcommand = interaction.options.getSubcommand();
     const user = interaction.options.getUser("user");
     const guildId = interaction.guild.id;
 
-    let userTickets = await UserInviteCount.findOne({
+    let userStats = await UserInviteCount.findOne({
       guildId,
       userId: user.id,
     });
 
-    if (!userTickets) {
-      userTickets = new UserInviteCount({
+    if (!userStats) {
+      userStats = new UserInviteCount({
         guildId,
         userId: user.id,
         tickets: 0,
+        weeklyInvites: 0,
+        lastResetTimestamp: new Date(),
       });
     }
 
     switch (subcommand) {
-      case "add":
+      case "add": {
         const addAmount = interaction.options.getInteger("amount");
-        userTickets.tickets += addAmount;
-        await userTickets.save();
+
+        if (addAmount <= 0) {
+          await interaction.reply({
+            content: "Please provide a positive number.",
+            ephemeral: true,
+          });
+          return;
+        }
+
+        userStats.tickets += addAmount;
+        userStats.weeklyInvites += addAmount;
+        await userStats.save();
+
         await interaction.reply(
-          `Added ${addAmount} ticket(s) to ${user.username}. They now have ${userTickets.tickets} ticket(s).`
+          `Added ${addAmount} ticket(s) to ${user.username}. They now have ${userStats.tickets} ticket(s).`
         );
         break;
+      }
 
-      case "remove":
+      case "remove": {
         const removeAmount = interaction.options.getInteger("amount");
-        if (userTickets.tickets < removeAmount) {
+
+        if (removeAmount <= 0) {
+          await interaction.reply({
+            content: "Please provide a positive number.",
+            ephemeral: true,
+          });
+          return;
+        }
+
+        if (userStats.tickets < removeAmount) {
           await interaction.reply(
-            `${user.username} doesn't have enough tickets. They currently have ${userTickets.tickets} ticket(s).`
+            `${user.username} doesn't have enough tickets. They currently have ${userStats.tickets} ticket(s).`
           );
         } else {
-          userTickets.tickets -= removeAmount;
-          await userTickets.save();
+          userStats.tickets -= removeAmount;
+          userStats.weeklyInvites = Math.max(
+            0,
+            userStats.weeklyInvites - removeAmount
+          ); // Prevent negative weekly invites
+          await userStats.save();
+
           await interaction.reply(
-            `Removed ${removeAmount} ticket(s) from ${user.username}. They now have ${userTickets.tickets} ticket(s).`
+            `Removed ${removeAmount} ticket(s) from ${user.username}. They now have ${userStats.tickets} ticket(s).`
           );
         }
         break;
+      }
     }
   },
 };
