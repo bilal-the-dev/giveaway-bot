@@ -80,7 +80,7 @@ async function handleMessage(message) {
   try {
     if (message.author.bot) return;
 
-    const cooldownTime = 5000; // 5 seconds cooldown
+    const cooldownTime = 2000; // 5 seconds cooldown
     const now = Date.now();
 
     if (messageCooldowns.has(message.author.id)) {
