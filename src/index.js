@@ -57,7 +57,7 @@ client.on("guildMemberAdd", async (member) => {
 
       const updatedInviteCount = await UserInviteCount.findOneAndUpdate(
         { guildId: member.guild.id, userId: invite.inviter.id },
-        { $inc: { tickets: randomTickets, weeklyInvites: randomTickets } },
+        { $inc: { tickets: randomTickets, weeklyInvites: 1 } },
         { upsert: true, new: true }
       );
 
