@@ -93,7 +93,6 @@ module.exports = {
         }
 
         userStats.tickets += addAmount;
-        userStats.weeklyInvites += addAmount;
         await userStats.save();
 
         await interaction.reply(
@@ -119,10 +118,6 @@ module.exports = {
           );
         } else {
           userStats.tickets -= removeAmount;
-          userStats.weeklyInvites = Math.max(
-            0,
-            userStats.weeklyInvites - removeAmount
-          ); // Prevent negative weekly invites
           await userStats.save();
 
           await interaction.reply(
