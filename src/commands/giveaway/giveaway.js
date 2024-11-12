@@ -8,6 +8,7 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
+  PermissionsBitField,
 } = require("discord.js");
 const ms = require("ms");
 const Giveaway = require("../../models/giveawaySchema");
