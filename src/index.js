@@ -48,6 +48,18 @@ client.on("guildMemberAdd", async (member) => {
     });
 
     if (storedInvite && invite.uses > storedInvite.uses) {
+      let userInviteCount = await UserInviteCount.findOne({
+        guildId: member.guild.id,
+        userId: invite.inviter.id,
+      });
+
+      if (userInviteCount && userInviteCount.hasJoined) {
+        console.log(
+          `${member.user.tag} rejoined, but they have already been awarded tickets previously.`
+        );
+        return;
+      }
+
       await inviteSchema.findOneAndUpdate(
         { guildId: member.guild.id, code: invite.code },
         { uses: invite.uses }
@@ -57,7 +69,7 @@ client.on("guildMemberAdd", async (member) => {
 
       const updatedInviteCount = await UserInviteCount.findOneAndUpdate(
         { guildId: member.guild.id, userId: invite.inviter.id },
-        { $inc: { tickets: randomTickets, weeklyInvites: 1 } },
+        { $inc: { tickets: randomTickets, weeklyInvites: 1 }, hasJoined: true },
         { upsert: true, new: true }
       );
 

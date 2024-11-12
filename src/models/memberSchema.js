@@ -7,6 +7,7 @@ const userInviteCountSchema = new mongoose.Schema({
   weeklyInvites: { type: Number, default: 0 },
   weeklyMessages: { type: Number, default: 0 },
   lastResetTimestamp: { type: Date, default: Date.now },
+  hasJoined: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("UserInviteCount", userInviteCountSchema);

@@ -161,5 +161,39 @@ module.exports = async (client, message) => {
         "An error occurred while fetching the message count. Please try again later."
       );
     }
+  } else if (message.content.startsWith("!top") && !message.author.bot) {
+    try {
+      // Fetch the top 50 users sorted by ticket count in descending order
+      const topUsers = await UserInviteCount.find({ guildId: message.guild.id })
+        .sort({ tickets: -1 })
+        .limit(50);
+
+      if (!topUsers.length) {
+        return message.channel.send("No users found with tickets.");
+      }
+
+      // Create a formatted leaderboard string
+      let leaderboard = "";
+      topUsers.forEach((user, index) => {
+        leaderboard += `\`#${index + 1}\` <@${user.userId}> - **${
+          user.tickets
+        } tickets**\n`;
+      });
+
+      // Create an embed using EmbedBuilder
+      const embed = new EmbedBuilder()
+        .setTitle("🎟️ Top 50 Ticket Holders")
+        .setColor("#FFD700")
+        .setDescription(
+          "> Here are the top 50 users with the highest tickets in the server!\n\n" +
+            leaderboard
+        );
+
+      // Send the embedded message to the channel
+      message.channel.send({ embeds: [embed] });
+    } catch (error) {
+      console.error("Error fetching top users:", error);
+      message.channel.send("An error occurred while retrieving the top users.");
+    }
   }
 };

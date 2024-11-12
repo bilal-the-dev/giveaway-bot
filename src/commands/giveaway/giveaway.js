@@ -45,6 +45,16 @@ module.exports = {
 
   callback: async (client, interaction) => {
     try {
+      if (
+        !interaction.member.permissions.has(
+          PermissionsBitField.Flags.Administrator
+        )
+      ) {
+        return interaction.reply({
+          content: "You do not have permission to make giveaway.",
+          ephemeral: true,
+        });
+      }
       await interaction.deferReply();
       const channel = interaction.options.getChannel("channel");
       const durationString = interaction.options.getString("duration");
